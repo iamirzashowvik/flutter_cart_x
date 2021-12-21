@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_cart/offline/offline.dart';
 
 import 'model/cart_model.dart';
 import 'model/cart_response_wrapper.dart';
@@ -10,6 +11,7 @@ class FlutterCart {
   late List<CartItem> _cartItemList;
   List<CartItem> get cartItem => _cartItemList;
   late List<String> _uuid;
+  var offlineCart = OfflineCart();
   bool _filterItemFound = false;
   late CartResponseWrapper message;
   factory FlutterCart() {
@@ -18,6 +20,10 @@ class FlutterCart {
   FlutterCart._internal() {
     _cartItemList = <CartItem>[];
     _uuid = [];
+  }
+//Get Cart from SharedPref
+  getCartFromLocal() async {
+    await offlineCart.getFromOffline();
   }
 
   /// This method is called when we have to add [productTemp] into cart
@@ -36,7 +42,7 @@ class FlutterCart {
           double.parse((quantity * unitPrice).toStringAsFixed(2));
       _uuid.add(_cartItem.uuid);
       _cartItemList.add(_cartItem);
-
+      offlineCart.makeOffline();
       message = CartResponseWrapper(true, _successMessage, _cartItemList);
       return message;
     } else {
@@ -65,6 +71,7 @@ class FlutterCart {
             message = CartResponseWrapper(true, _successMessage, _cartItemList);
           }
         }
+        offlineCart.makeOffline();
       });
 
       /// if _filterItemFound is [false] then we directly add the product in our cart
@@ -72,6 +79,7 @@ class FlutterCart {
         _uuid.add(_cartItem.uuid);
         _updateProductDetails(_cartItem, quantity, unitPrice);
         _cartItemList.add(_cartItem);
+        offlineCart.makeOffline();
         message = CartResponseWrapper(true, _successMessage, _cartItemList);
       }
       _filterItemFound = false;
@@ -86,11 +94,14 @@ class FlutterCart {
       _cartItemList[index].subTotal =
           (_cartItemList[index].quantity * _cartItemList[index].unitPrice)
               .roundToDouble();
+      offlineCart.makeOffline();
     } else {
       _cartItemList.removeAt(index);
+      offlineCart.makeOffline();
       return CartResponseWrapper(true, _removedMessage, _cartItemList);
       // return true;
     }
+    offlineCart.makeOffline();
     return CartResponseWrapper(true, _removedMessage, _cartItemList);
   }
 
@@ -98,6 +109,7 @@ class FlutterCart {
     for (int i = _cartItemList[index].quantity; i > 0; i--) {
       decrementItemFromCart(index);
     }
+    offlineCart.makeOffline();
     message = CartResponseWrapper(true, _successMessage, _cartItemList);
     return message;
   }
@@ -105,6 +117,7 @@ class FlutterCart {
   deleteAllCart() {
     _cartItemList = <CartItem>[];
     _uuid = <String>[];
+    offlineCart.deleteHoleCart();
   }
 
   int? findItemIndexFromCart(cartId) {
